@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Earthquake Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Recent Earthquakes</h1>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([37.7749, -122.4194], 5); // Centered on California
+
+        // Add a tile layer to the map (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Function to determine the color of the marker based on magnitude
+        function getColor(magnitude) {
+            return magnitude > 90 ? '#FF0000' :
+                   magnitude > 70 ? '#FF7F00' :
+                   magnitude > 50 ? '#FFFF00' :
+                   magnitude > 30 ? '#7FFF00' :
+                   magnitude > 10 ? '#00FF00' :
+                                    '#00FF7F';
+        }
+
+        // Function to determine the size of the marker based on magnitude
+        function getRadius(magnitude) {
+            return magnitude * 2;
+        }
+
+        // Fetch the GeoJSON data from USGS
+        fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson')
+            .then(response => response.json())
+            .then(data => {
+                // Add GeoJSON layer to the map
+                L.geoJSON(data, {
+                    pointToLayer: function (feature, latlng) {
+                        return L.circleMarker(latlng, {
+                            radius: getRadius(feature.properties.mag),
+                            fillColor: getColor(feature.properties.mag),
+                            color: "#000",
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        });
+                    },
+                    onEachFeature: function (feature, layer) {
+                        layer.bindPopup(`<h3>${feature.properties.place}</h3><hr><p>Magnitude: ${feature.properties.mag}</p><p>${new Date(feature.properties.time)}</p>`);
+                    }
+                }).addTo(map);
+            })
+            .catch(error => console.error('Error fetching the GeoJSON data:', error));
+    </script>
+</body>
+</html>
